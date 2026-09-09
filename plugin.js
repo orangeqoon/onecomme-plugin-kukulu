@@ -21,7 +21,7 @@ async function resolveServiceId(configuredId) {
     const target = services.find(s => {
       const name = (s.name || '').toLowerCase();
       const url = (s.url || '').toLowerCase();
-      return name.includes('kukulu') || url.includes('kuku.lu');
+      return name.includes('kukulu') || url.includes('kuku.lu') || url.includes('erinn.biz');
     });
 
     if (target) {
@@ -50,14 +50,14 @@ async function ensureServiceEnabled(serviceId) {
 const plugin = {
   name: 'kukuluLIVE コメント連携',
   uid: 'com.kukululive.comment-sync',
-  version: '1.3.0',
+  version: '1.3.1',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
   permissions: ['comments'],
   defaultState: {},
 
   init({ dir }) {
-    console.info('[kukulu-plugin] 初期化開始 (kukuluLIVE コメント連携 v1.3.0)');
+    console.info('[kukulu-plugin] 初期化開始 (お絵描き画像表示対応 v1.3.1)');
     const configPath = path.join(dir, 'config.json');
     const sampleConfigPath = path.join(dir, 'config.sample.json');
 
@@ -133,10 +133,46 @@ const plugin = {
         if (item.from === 'admin' && item.message && item.message.startsWith('__INFO__')) continue;
 
         let commentText = item.message || '';
+
+        // お絵描きコメント（visualchat）の画像埋め込み
         if (item.type === 'visualchat') {
-          commentText = commentText ? `${commentText} [お絵描き]` : '[お絵描き]';
+          let imgUrl = '';
+          if (item.message_additional) {
+            if (typeof item.message_additional === 'string') {
+              try {
+                const parsed = JSON.parse(item.message_additional);
+                imgUrl = parsed.visualchat_url || '';
+              } catch (_) {}
+            } else if (typeof item.message_additional === 'object') {
+              imgUrl = item.message_additional.visualchat_url || '';
+            }
+          }
+          if (imgUrl) {
+            commentText = `${commentText ? commentText + '<br>' : ''}<img src="${imgUrl}" alt="[お絵描き]" style="max-width: 250px; max-height: 200px; object-fit: contain; border-radius: 4px; display: block; margin-top: 4px;" />`;
+          } else {
+            commentText = commentText ? `${commentText} [お絵描き]` : '[お絵描き]';
+          }
         } else if (item.type === 'sscomment') {
-          commentText = commentText ? `${commentText} [画像/動画]` : '[画像/動画]';
+          // 画像・動画コメント（sscomment）の画像埋め込み
+          let mediaUrl = '';
+          if (item.message_additional) {
+            if (typeof item.message_additional === 'string') {
+              try {
+                const parsed = JSON.parse(item.message_additional);
+                mediaUrl = parsed.ss_url || parsed.url || parsed.image_url || '';
+              } catch (_) {}
+            } else if (typeof item.message_additional === 'object') {
+              mediaUrl = item.message_additional.ss_url || item.message_additional.url || item.message_additional.image_url || '';
+            }
+          }
+          if (!mediaUrl && item.url) {
+            mediaUrl = item.url;
+          }
+          if (mediaUrl) {
+            commentText = `${commentText ? commentText + '<br>' : ''}<img src="${mediaUrl}" alt="[画像]" style="max-width: 250px; max-height: 200px; object-fit: contain; border-radius: 4px; display: block; margin-top: 4px;" />`;
+          } else {
+            commentText = commentText ? `${commentText} [画像/動画]` : '[画像/動画]';
+          }
         }
 
         const isMaster = item.from === 'master';
@@ -210,7 +246,7 @@ const plugin = {
 
         const serviceId = await resolveServiceId(configuredServiceId);
         if (!serviceId) {
-          console.warn('[kukulu-plugin] わんコメにKukulu用の配信枠が見つかりません。わんコメで枠を追加（枠名を「Kukulu」にするか、URLを「https://kuku.lu/」に設定）してください。');
+          console.warn('[kukulu-plugin] わんコメにKukulu用の配信枠が見つかりません。わんコメで枠を追加（枠名を「Kukulu」にするか、URLを「https://live.erinn.biz/」等に設定）してください。');
           return;
         }
 
