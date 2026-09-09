@@ -13,12 +13,12 @@ let popupPort = 0;
 let isUrlSynced = false;
 
 const plugin = {
-  name: 'Kukulu LIVE Plugin',
-  uid: 'dev.orangeqoon.kukulu',
+  name: 'kukuluLIVE コメント連携',
+  uid: 'com.kukululive.comment-sync',
   version: '1.4.1',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
-  permissions: ['comment', 'service'],
+  permissions: ['comments'],
   defaultState: {},
 
   init({ dir, store }) {
