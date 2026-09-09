@@ -3,5 +3,7 @@
   "serviceId": "",
   "intervalMs": 2000,
   "autoPublish": true,
-  "autoGetPort": true
+  "autoGetPort": true,
+  "imageMaxWidth": 650,
+  "imageMaxHeight": 520
 }

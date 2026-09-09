@@ -50,14 +50,14 @@ async function ensureServiceEnabled(serviceId) {
 const plugin = {
   name: 'kukuluLIVE コメント連携',
   uid: 'com.kukululive.comment-sync',
-  version: '1.3.1',
+  version: '1.4.0',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
   permissions: ['comments'],
   defaultState: {},
 
   init({ dir }) {
-    console.info('[kukulu-plugin] 初期化開始 (お絵描き画像表示対応 v1.3.1)');
+    console.info('[kukulu-plugin] 初期化開始 (お絵描き大画面表示対応 v1.4.0)');
     const configPath = path.join(dir, 'config.json');
     const sampleConfigPath = path.join(dir, 'config.sample.json');
 
@@ -71,7 +71,9 @@ const plugin = {
           serviceId: "",
           intervalMs: 2000,
           autoPublish: true,
-          autoGetPort: true
+          autoGetPort: true,
+          imageMaxWidth: 650,
+          imageMaxHeight: 520
         };
         fs.writeFileSync(configPath, JSON.stringify(initialConfig, null, 2), 'utf8');
       }
@@ -121,8 +123,11 @@ const plugin = {
     };
 
     // コメント送信処理
-    const sendCommentList = async (comments, serviceId) => {
+    const sendCommentList = async (comments, serviceId, config) => {
       await ensureServiceEnabled(serviceId);
+
+      const maxWidth = config.imageMaxWidth || 650;
+      const maxHeight = config.imageMaxHeight || 520;
 
       for (const item of comments) {
         const cnum = Number(item.cnum);
@@ -134,7 +139,7 @@ const plugin = {
 
         let commentText = item.message || '';
 
-        // お絵描きコメント（visualchat）の画像埋め込み
+        // お絵描きコメント（visualchat）の画像埋め込み（大画面＋クリック拡大対応）
         if (item.type === 'visualchat') {
           let imgUrl = '';
           if (item.message_additional) {
@@ -148,7 +153,7 @@ const plugin = {
             }
           }
           if (imgUrl) {
-            commentText = `${commentText ? commentText + '<br>' : ''}<img src="${imgUrl}" alt="[お絵描き]" style="max-width: 250px; max-height: 200px; object-fit: contain; border-radius: 4px; display: block; margin-top: 4px;" />`;
+            commentText = `${commentText ? commentText + '<br>' : ''}<div style="margin-top:8px;"><a href="${imgUrl}" target="_blank" rel="noopener noreferrer" title="クリックで原寸大表示"><img src="${imgUrl}" alt="[お絵描き]" style="width:100%;max-width:${maxWidth}px;max-height:${maxHeight}px;object-fit:contain;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.22);display:block;background:#ffffff;border:1px solid rgba(0,0,0,0.1);cursor:pointer;" /></a></div>`;
           } else {
             commentText = commentText ? `${commentText} [お絵描き]` : '[お絵描き]';
           }
@@ -169,7 +174,7 @@ const plugin = {
             mediaUrl = item.url;
           }
           if (mediaUrl) {
-            commentText = `${commentText ? commentText + '<br>' : ''}<img src="${mediaUrl}" alt="[画像]" style="max-width: 250px; max-height: 200px; object-fit: contain; border-radius: 4px; display: block; margin-top: 4px;" />`;
+            commentText = `${commentText ? commentText + '<br>' : ''}<div style="margin-top:8px;"><a href="${mediaUrl}" target="_blank" rel="noopener noreferrer" title="クリックで原寸大表示"><img src="${mediaUrl}" alt="[画像]" style="width:100%;max-width:${maxWidth}px;max-height:${maxHeight}px;object-fit:contain;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.22);display:block;background:#ffffff;border:1px solid rgba(0,0,0,0.1);cursor:pointer;" /></a></div>`;
           } else {
             commentText = commentText ? `${commentText} [画像/動画]` : '[画像/動画]';
           }
@@ -200,7 +205,7 @@ const plugin = {
     };
 
     // コメント取得関数
-    const fetchComments = async (apikey, serviceId) => {
+    const fetchComments = async (apikey, serviceId, config) => {
       let url = `https://live.erinn.biz/api/?category=comment&type=list&apikey=${encodeURIComponent(apikey)}`;
       if (lastCnum > 0) url += `&cnum=${lastCnum}`;
 
@@ -219,7 +224,7 @@ const plugin = {
           if (recent.length > 0) {
             console.info(`[kukulu-plugin] 初回接続: 直近15分以内のコメント ${recent.length} 件を取り込みます`);
             const sortedRecent = [...recent].sort((a, b) => (Number(a.cnum) || 0) - (Number(b.cnum) || 0));
-            await sendCommentList(sortedRecent, serviceId);
+            await sendCommentList(sortedRecent, serviceId, config);
           } else {
             console.info(`[kukulu-plugin] 初回接続完了: 既存コメント${data.comments.length}件をスキップ (最新cnum: ${maxCnum})`);
           }
@@ -228,7 +233,7 @@ const plugin = {
           return;
         }
         const sorted = [...data.comments].sort((a, b) => (Number(a.cnum) || 0) - (Number(b.cnum) || 0));
-        await sendCommentList(sorted, serviceId);
+        await sendCommentList(sorted, serviceId, config);
       }
     };
 
@@ -251,7 +256,7 @@ const plugin = {
         }
 
         await checkLivePort(apikey, config);
-        await fetchComments(apikey, serviceId);
+        await fetchComments(apikey, serviceId, config);
       } catch (err) {
         console.error('[kukulu-plugin] ポーリング中エラー:', err.message || err);
       } finally {
