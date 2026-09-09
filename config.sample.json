@@ -1,0 +1,7 @@
+{
+  "apikey": "ここにKukuluのAPIキーを入力",
+  "serviceId": "",
+  "intervalMs": 2000,
+  "autoPublish": true,
+  "autoGetPort": true
+}
