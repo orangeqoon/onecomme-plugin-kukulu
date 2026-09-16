@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kukuluLIVE コメント連携 設定</title>
+  <style>
+    :root {
+      --bg-primary: #1a1e29;
+      --bg-card: #222838;
+      --bg-input: #151822;
+      --text-main: #f0f3fa;
+      --text-sub: #94a3b8;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-gradient: linear-gradient(135deg, #0284c7, #38bdf8);
+      --border: #334155;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .logo-badge {
+      background: var(--accent-gradient);
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+      letter-spacing: 0.5px;
+    }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .header-text p {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #71717a;
+      transition: background 0.3s;
+    }
+
+    .status-dot.active { background: var(--success); box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+    .status-dot.connecting { background: var(--warning); box-shadow: 0 0 10px rgba(234, 179, 8, 0.5); }
+    .status-dot.no_live { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+    .status-dot.error { background: var(--error); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+    .status-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status-desc {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: #38bdf8;
+    }
+
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toggle-pwd-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      padding: 0 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .toggle-pwd-btn:hover {
+      color: var(--text-main);
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      flex: 0 0 120px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo-badge">Kukulu</div>
+    <div class="header-text">
+      <h1>kukuluLIVE コメント連携</h1>
+      <p>わんコメ公式推奨設計 Web設定パネル v1.5.0</p>
+    </div>
+  </div>
+
+  <!-- 接続状態インジケーター -->
+  <div class="status-card">
+    <div class="status-left">
+      <div class="status-dot" id="status-dot"></div>
+      <div>
+        <div class="status-title" id="status-title">ステータス確認中...</div>
+        <div class="status-desc" id="status-desc">初期化処理を行っています</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="fetchStatus()" style="padding: 6px 12px; font-size: 13px;">更新</button>
+  </div>
+
+  <!-- 基本設定 -->
+  <div class="card">
+    <div class="card-title">📡 接続設定</div>
+
+    <div class="form-group">
+      <label for="apikey">Kukulu APIキー</label>
+      <div class="input-with-button">
+        <input type="password" id="apikey" placeholder="KukuluのAPIキー">
+        <button type="button" class="toggle-pwd-btn" onclick="togglePassword()">表示</button>
+      </div>
+      <div class="hint">
+        Kukuluの <a href="https://live.erinn.biz/help.php" target="_blank" style="color:#38bdf8;">配信ヘルプ・設定ページ</a> から取得できるAPIキーです。
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="service-select">わんコメ 連携先枠（Service）</label>
+      <select id="service-select">
+        <option value="">✨ 自動検出（枠名に「Kukulu」を含む枠）</option>
+      </select>
+      <div class="hint">コメントを流し込むわんコメ側の配信枠を選択します。通常は自動検出でOKです。</div>
+    </div>
+
+    <div class="form-group">
+      <label for="interval">取得間隔 (ミリ秒)</label>
+      <input type="number" id="interval" min="1000" step="500" value="2000">
+      <div class="hint">コメントを確認する間隔（推奨: 2000ms = 2秒）</div>
+    </div>
+  </div>
+
+  <!-- 配信自動化・画像設定 -->
+  <div class="card">
+    <div class="card-title">⚙️ 配信自動化 & メディア設定</div>
+
+    <div class="checkbox-group">
+      <label class="checkbox-item">
+        <input type="checkbox" id="auto-get-port" checked>
+        <span>配信枠がない場合に自動で枠を取得する (autoGetPort)</span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" id="auto-publish" checked>
+        <span>取得した枠が非公開の場合に自動で公開化する (autoPublish)</span>
+      </label>
+    </div>
+
+    <div class="grid-2" style="margin-top: 16px;">
+      <div class="form-group">
+        <label for="img-max-w">お絵描き/画像 最大幅 (px)</label>
+        <input type="number" id="img-max-w" value="650">
+      </div>
+      <div class="form-group">
+        <label for="img-max-h">お絵描き/画像 最大高さ (px)</label>
+        <input type="number" id="img-max-h" value="520">
+      </div>
+    </div>
+    <div class="hint">お絵描きコメント・画像コメントが投稿された際、わんコメビューア内で表示する最大サイズです。</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="saveSettings()">💾 設定を保存して接続</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">設定を保存しました</div>
+
+<script>
+  const PLUGIN_API_URL = '/api/plugins/com.kukululive.comment-sync';
+
+  function togglePassword() {
+    const input = document.getElementById('apikey');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  async function loadServices(currentServiceId) {
+    const select = document.getElementById('service-select');
+    try {
+      const res = await fetch('/api/services');
+      if (!res.ok) return;
+      const services = await res.json();
+
+      select.innerHTML = '<option value="">✨ 自動検出（枠名またはURLに「Kukulu」を含む枠）</option>';
+
+      services.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name || '無名の枠'} (${s.id})`;
+        if (s.id === currentServiceId) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn('枠一覧の取得に失敗:', e);
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch(PLUGIN_API_URL);
+      if (!res.ok) throw new Error('API通信エラー');
+      const data = await res.json();
+
+      const conf = data.config || {};
+      const stat = data.status || {};
+
+      if (document.getElementById('apikey').value === '') {
+        document.getElementById('apikey').value = conf.apikey || '';
+      }
+      if (document.getElementById('interval').value === '2000' && conf.intervalMs) {
+        document.getElementById('interval').value = conf.intervalMs;
+      }
+      document.getElementById('auto-get-port').checked = conf.autoGetPort !== false;
+      document.getElementById('auto-publish').checked = conf.autoPublish !== false;
+
+      if (conf.imageMaxWidth) document.getElementById('img-max-w').value = conf.imageMaxWidth;
+      if (conf.imageMaxHeight) document.getElementById('img-max-h').value = conf.imageMaxHeight;
+
+      await loadServices(conf.serviceId);
+
+      const dot = document.getElementById('status-dot');
+      const title = document.getElementById('status-title');
+      const desc = document.getElementById('status-desc');
+
+      dot.className = 'status-dot ' + (stat.status || 'idle');
+      title.textContent = stat.message || '待機中';
+
+      if (stat.status === 'active') {
+        desc.textContent = `受信件数: ${stat.totalReceived} 件 ${stat.liveId ? `(配信ID: ${stat.liveId})` : ''}`;
+      } else if (stat.status === 'no_live') {
+        desc.textContent = '現在Kukuluで配信枠が開いていません（待機中）';
+      } else {
+        desc.textContent = stat.message || '待機中';
+      }
+    } catch (e) {
+      document.getElementById('status-title').textContent = 'プラグイン未応答';
+      document.getElementById('status-desc').textContent = 'わんコメまたはプラグインの起動状態を確認してください';
+    }
+  }
+
+  async function saveSettings() {
+    const apikey = document.getElementById('apikey').value.trim();
+    const serviceId = document.getElementById('service-select').value;
+    const intervalMs = Number(document.getElementById('interval').value) || 2000;
+    const autoGetPort = document.getElementById('auto-get-port').checked;
+    const autoPublish = document.getElementById('auto-publish').checked;
+    const imageMaxWidth = Number(document.getElementById('img-max-w').value) || 650;
+    const imageMaxHeight = Number(document.getElementById('img-max-h').value) || 520;
+
+    try {
+      const res = await fetch(PLUGIN_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey,
+          serviceId,
+          intervalMs,
+          autoGetPort,
+          autoPublish,
+          imageMaxWidth,
+          imageMaxHeight
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ 設定を保存し、再接続を開始しました');
+        fetchStatus();
+      } else {
+        alert('保存エラー: ' + (data.error || '不明なエラー'));
+      }
+    } catch (e) {
+      alert('保存通信エラー: ' + e.message);
+    }
+  }
+
+  fetchStatus();
+  setInterval(fetchStatus, 4000);
+</script>
+
+</body>
+</html>
