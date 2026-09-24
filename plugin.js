@@ -154,32 +154,29 @@ async function sendCommentList(comments, serviceId, config) {
 
     let commentText = item.comment || '';
 
-    // --- 自動在席確認（定期点呼）の検知と自動応答 ---
-    if (item.from === 'system' && (item.is_absence === 1 || item.is_absence === '1' || commentText.includes('在席確認'))) {
-      const match = commentText.match(/「([^」]+)」/);
-      if (match && match[1]) {
-        const keyword = match[1];
-        const minMs = 10 * 60 * 1000;
-        const maxMs = 40 * 60 * 1000;
-        const delayMs = Math.floor(Math.random() * (maxMs - minMs + 1) + minMs);
-        const delayMinutes = (delayMs / 1000 / 60).toFixed(1);
-        console.info(`[kukulu-plugin] 自動在席確認を検出しました。約${delayMinutes}分後にキーワード「${keyword}」を自動応答します。`);
+    // --- 在席確認（定期点呼・「打たないと終了します」等）の検知と即時枠返上（配信終了） ---
+    const isAbsenceNotice = 
+      (item.from === 'system' && (item.is_absence === 1 || item.is_absence === '1' || commentText.includes('在席確認') || commentText.includes('点呼'))) ||
+      commentText.includes('打たないと終了します') ||
+      commentText.includes('マジカルバナナ');
 
-        const writeUrl = `https://live.erinn.biz/api/?category=comment&type=write&apikey=${encodeURIComponent(config.apikey)}&comment=${encodeURIComponent(keyword)}&icon=1`;
+    if (isAbsenceNotice) {
+      console.warn(`[kukulu-plugin] 在席確認・点呼メッセージを検知しました: 「${commentText}」`);
+      console.warn('[kukulu-plugin] 期限切れや放置警告を受ける前に、即座に枠を返上（配信終了）します...');
 
-        setTimeout(() => {
-          fetch(writeUrl)
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.success === 1) {
-                console.info(`[kukulu-plugin] 自動在席確認に自動応答しました: ${keyword}`);
-              } else {
-                console.warn(`[kukulu-plugin] 自動在席確認の応答エラー:`, data);
-              }
-            })
-            .catch(err => console.error('[kukulu-plugin] 自動在席確認の応答リクエスト失敗:', err.message));
-        }, delayMs);
-      }
+      const closeUrl = `https://live.erinn.biz/api/?category=mylive&type=port_status&apikey=${encodeURIComponent(config.apikey)}&status=0`;
+      fetch(closeUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success === 1) {
+            console.info('[kukulu-plugin] ★ 在席確認検知により枠を正常に返上（配信終了）しました。');
+          } else {
+            console.warn('[kukulu-plugin] 枠返上APIレスポンス:', data);
+          }
+          statusState.status = 'no_live';
+          statusState.message = '在席確認検知により即時配信終了';
+        })
+        .catch(err => console.error('[kukulu-plugin] 枠返上リクエスト失敗:', err.message));
     }
 
     const escapeHtml = (str) => {
@@ -419,7 +416,7 @@ function startPolling(dir) {
 const plugin = {
   name: 'kukuluLIVE コメント連携',
   uid: 'com.kukululive.comment-sync',
-  version: '1.6.0',
+  version: '1.6.1',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
   permissions: ['comments'],
@@ -427,7 +424,7 @@ const plugin = {
 
   init({ dir }) {
     currentDir = dir;
-    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.6.0)');
+    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.6.1)');
     const configPath = path.join(dir, 'config.json');
     const sampleConfigPath = path.join(dir, 'config.sample.json');
 
