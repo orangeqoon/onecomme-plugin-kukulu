@@ -58,7 +58,15 @@ async function ensureServiceEnabled(serviceId) {
   } catch (_) {}
 }
 
-// 枠状態チェック & 自動枠取得・公開化
+function isSleepTitle(title) {
+  if (!title) return false;
+  if (/寝る|昼寝/.test(title)) return true;
+  if (/sleeping/i.test(title)) return true;
+  if (/\b(nap|naps|napping)\b/i.test(title)) return true;
+  return false;
+}
+
+// 枠状態チェック & 自動枠取得・公開化・睡眠時自動枠終了
 async function checkLivePort(apikey, config) {
   try {
     const infoUrl = `https://live.erinn.biz/api/?category=mylive&type=port_info&apikey=${encodeURIComponent(apikey)}`;
@@ -72,14 +80,33 @@ async function checkLivePort(apikey, config) {
     }
 
     const autoGet = config.autoGetPort === true;
+    const autoCloseSleep = config.autoCloseOnSleepTitle === true;
     const hasLive = String(data.mylive) === '1';
+    const currentTitle = data.title || '';
+    const sleepDetected = isSleepTitle(currentTitle);
 
     if (hasLive && data.liveid) {
       statusState.liveId = String(data.liveid);
     }
 
-    // 1. 配信枠が存在しない場合の自動取得
+    // 1. 睡眠キーワード検知時の自動枠返上（終了）
+    if (hasLive && autoCloseSleep && sleepDetected) {
+      console.info(`[kukulu-plugin] 睡眠キーワードを含むタイトル「${currentTitle}」を検知したため、配信枠を返上（終了）します...`);
+      const closeUrl = `https://live.erinn.biz/api/?category=mylive&type=port_status&apikey=${encodeURIComponent(apikey)}&status=0`;
+      await fetch(closeUrl).catch(() => {});
+      statusState.status = 'no_live';
+      statusState.message = `睡眠タイトル検知により枠返上: ${currentTitle}`;
+      return;
+    }
+
+    // 2. 配信枠が存在しない場合の自動取得
     if (!hasLive && autoGet) {
+      if (autoCloseSleep && sleepDetected) {
+        statusState.status = 'no_live';
+        statusState.message = `睡眠タイトルのため自動取得待機: ${currentTitle}`;
+        return;
+      }
+
       statusState.status = 'connecting';
       statusState.message = '配信枠が存在しないため自動取得中...';
       console.info('[kukulu-plugin] 配信枠が存在しないため、自動で枠を取得します...');
@@ -97,7 +124,7 @@ async function checkLivePort(apikey, config) {
       statusState.message = '配信枠なし（待機中）';
     }
 
-    // 2. 枠が非公開の場合の自動公開化
+    // 3. 枠が非公開の場合の自動公開化
     const autoPub = config.autoPublish !== false;
     const isPublic = String(data.public) === '1';
     if (hasLive && !isPublic && autoPub) {
@@ -392,7 +419,7 @@ function startPolling(dir) {
 const plugin = {
   name: 'kukuluLIVE コメント連携',
   uid: 'com.kukululive.comment-sync',
-  version: '1.5.1',
+  version: '1.6.0',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
   permissions: ['comments'],
@@ -400,7 +427,7 @@ const plugin = {
 
   init({ dir }) {
     currentDir = dir;
-    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.5.1)');
+    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.6.0)');
     const configPath = path.join(dir, 'config.json');
     const sampleConfigPath = path.join(dir, 'config.sample.json');
 
@@ -413,7 +440,8 @@ const plugin = {
           serviceId: "",
           intervalMs: 2000,
           autoPublish: true,
-          autoGetPort: true,
+          autoGetPort: false,
+          autoCloseOnSleepTitle: false,
           imageMaxWidth: 650,
           imageMaxHeight: 520
         };
@@ -434,7 +462,8 @@ const plugin = {
         serviceId: '',
         intervalMs: 2000,
         autoPublish: true,
-        autoGetPort: true,
+        autoGetPort: false,
+        autoCloseOnSleepTitle: false,
         imageMaxWidth: 650,
         imageMaxHeight: 520
       };
@@ -466,6 +495,7 @@ const plugin = {
         if (body.intervalMs !== undefined) config.intervalMs = Math.max(1000, Number(body.intervalMs) || 2000);
         if (body.autoPublish !== undefined) config.autoPublish = Boolean(body.autoPublish);
         if (body.autoGetPort !== undefined) config.autoGetPort = Boolean(body.autoGetPort);
+        if (body.autoCloseOnSleepTitle !== undefined) config.autoCloseOnSleepTitle = Boolean(body.autoCloseOnSleepTitle);
         if (body.imageMaxWidth !== undefined) config.imageMaxWidth = Number(body.imageMaxWidth) || 650;
         if (body.imageMaxHeight !== undefined) config.imageMaxHeight = Number(body.imageMaxHeight) || 520;
 

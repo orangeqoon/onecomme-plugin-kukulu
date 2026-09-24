@@ -3,7 +3,8 @@
   "serviceId": "",
   "intervalMs": 2000,
   "autoPublish": true,
-  "autoGetPort": true,
+  "autoGetPort": false,
+  "autoCloseOnSleepTitle": false,
   "imageMaxWidth": 650,
   "imageMaxHeight": 520
 }

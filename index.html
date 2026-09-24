@@ -287,7 +287,7 @@
     <div class="logo-badge">Kukulu</div>
     <div class="header-text">
       <h1>kukuluLIVE コメント連携</h1>
-      <p>わんコメ公式推奨設計 Web設定パネル v1.5.0</p>
+      <p>わんコメ公式推奨設計 Web設定パネル v1.6.0</p>
     </div>
   </div>
 
@@ -339,12 +339,16 @@
 
     <div class="checkbox-group">
       <label class="checkbox-item">
-        <input type="checkbox" id="auto-get-port" checked>
+        <input type="checkbox" id="auto-get-port">
         <span>配信枠がない場合に自動で枠を取得する (autoGetPort)</span>
       </label>
       <label class="checkbox-item">
         <input type="checkbox" id="auto-publish" checked>
         <span>取得した枠が非公開の場合に自動で公開化する (autoPublish)</span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" id="auto-close-sleep">
+        <span>睡眠キーワード（寝る/昼寝/Sleeping/Nap）で自動枠終了 (autoCloseOnSleepTitle)</span>
       </label>
     </div>
 
@@ -421,8 +425,9 @@
       if (document.getElementById('interval').value === '2000' && conf.intervalMs) {
         document.getElementById('interval').value = conf.intervalMs;
       }
-      document.getElementById('auto-get-port').checked = conf.autoGetPort !== false;
+      document.getElementById('auto-get-port').checked = conf.autoGetPort === true;
       document.getElementById('auto-publish').checked = conf.autoPublish !== false;
+      document.getElementById('auto-close-sleep').checked = conf.autoCloseOnSleepTitle === true;
 
       if (conf.imageMaxWidth) document.getElementById('img-max-w').value = conf.imageMaxWidth;
       if (conf.imageMaxHeight) document.getElementById('img-max-h').value = conf.imageMaxHeight;
@@ -455,6 +460,7 @@
     const intervalMs = Number(document.getElementById('interval').value) || 2000;
     const autoGetPort = document.getElementById('auto-get-port').checked;
     const autoPublish = document.getElementById('auto-publish').checked;
+    const autoCloseOnSleepTitle = document.getElementById('auto-close-sleep').checked;
     const imageMaxWidth = Number(document.getElementById('img-max-w').value) || 650;
     const imageMaxHeight = Number(document.getElementById('img-max-h').value) || 520;
 
@@ -468,6 +474,7 @@
           intervalMs,
           autoGetPort,
           autoPublish,
+          autoCloseOnSleepTitle,
           imageMaxWidth,
           imageMaxHeight
         })
