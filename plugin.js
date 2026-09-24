@@ -71,7 +71,7 @@ async function checkLivePort(apikey, config) {
       return;
     }
 
-    const autoGet = config.autoGetPort !== false;
+    const autoGet = config.autoGetPort === true;
     const hasLive = String(data.mylive) === '1';
 
     if (hasLive && data.liveid) {
@@ -392,7 +392,7 @@ function startPolling(dir) {
 const plugin = {
   name: 'kukuluLIVE コメント連携',
   uid: 'com.kukululive.comment-sync',
-  version: '1.5.0',
+  version: '1.5.1',
   author: 'orangeqoon',
   url: 'https://github.com/orangeqoon/onecomme-plugin-kukulu',
   permissions: ['comments'],
@@ -400,7 +400,7 @@ const plugin = {
 
   init({ dir }) {
     currentDir = dir;
-    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.5.0)');
+    console.info('[kukulu-plugin] 初期化開始 (Kukulu コメント連携 v1.5.1)');
     const configPath = path.join(dir, 'config.json');
     const sampleConfigPath = path.join(dir, 'config.sample.json');
 
